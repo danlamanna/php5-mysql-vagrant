@@ -1,0 +1,2 @@
+* Requirements
+** ansible-playbook must be on the path of the host.
