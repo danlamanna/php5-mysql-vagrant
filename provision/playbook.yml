@@ -1,0 +1,81 @@
+---
+- hosts: all
+  sudo: true
+  tasks:
+  - name: apt-get update && apt-get upgrade
+    apt: update_cache=yes
+    apt: upgrade=yes
+
+  - name: create /var/www
+    file: path=/var/www state=directory
+
+  - name: ensure apache is installed
+    apt: name=apache2 state=present
+
+  - name: make sure apache is running
+    action: service name=apache2 state=started enabled=true
+
+  - name: install MySQL
+    apt: name={{ item }} state=latest
+    with_items:
+      - mysql-server
+      - mysql-client
+      - python-mysqldb
+      - curl
+
+  - name: add mysql user
+    mysql_user: name=vagrant
+                host='%'
+                password=vagant
+                priv=*.*:ALL,GRANT
+
+  - name: add php5 ppa
+    apt_repository: repo='ppa:ondrej/php5'
+
+  - name: install PHP5 packages
+    apt: name={{ item }} state=latest
+    with_items:
+      - php5
+      - libapache2-mod-php5
+      - php5-cli
+      - php5-dev
+      - php5-mysql
+      - php5-mcrypt
+      - php5-gd
+      - php5-curl
+      - php5-xdebug
+      - php5-readline
+
+  - name: add xdebug config
+    lineinfile:
+      dest=/etc/php5/apache2/php.ini
+      regexp="{{ item.regexp }}"
+      line="{{ item.line }}"
+    with_items:
+      - { regexp: '^\[xdebug\]', line: '\n[xdebug]'}
+      - { regexp: '^xdebug.remote_enable=On', line: 'xdebug.remote_enable=On' }
+      - { regexp: '^xdebug.remote_host=localhost', line: 'xdebug.remote_host=localhost' }
+      - { regexp: '^xdebug.remote_port=9000', line: 'xdebug.remote_port=9000' }
+      - { regexp: '^xdebug.remote_handler=dbgp', line: 'xdebug.remote_handler=dbgp' }
+      - { regexp: '^xdebug.remote_connect_back=1', line: 'xdebug.remote_connect_back=1' }
+
+  - name: install composer
+    shell: curl -sS https://getcomposer.org/installer | php
+    args:
+      chdir: /usr/local/bin
+      creates: /usr/local/bin/composer
+
+  - name: rename composer.phar to composer
+    shell: mv composer.phar composer
+    args:
+      chdir: /usr/local/bin
+      creates: /usr/local/bin/composer
+
+  - name: make composer executable
+    shell: chmod a+x /usr/local/bin/composer
+
+  handlers:
+    - name: restart apache
+      action: service name=apache2 state=restarted
+    - name: restart mysql
+      action: service name=mysql state=restarted
