@@ -9,11 +9,29 @@
   - name: create /var/www
     file: path=/var/www state=directory
 
+  - name: install general packages
+    apt: name={{ item }} state=latest
+    with_items:
+      - curl
+      - git
+
   - name: ensure apache is installed
     apt: name=apache2 state=present
 
   - name: make sure apache is running
     action: service name=apache2 state=started enabled=true
+
+  - name: set vagrant as the apache run user
+    lineinfile:
+      state=present
+      dest=/etc/apache2/envvars
+      line="export APACHE_RUN_USER=vagrant"
+
+  - name: remove www-data as apache run user
+    lineinfile:
+      state=absent
+      dest=/etc/apache2/envvars
+      regexp="^export APACHE_RUN_USER=www-data"
 
   - name: install MySQL
     apt: name={{ item }} state=latest
@@ -21,7 +39,6 @@
       - mysql-server
       - mysql-client
       - python-mysqldb
-      - curl
 
   - name: add mysql user
     mysql_user: name=vagrant
@@ -52,7 +69,7 @@
       regexp="{{ item.regexp }}"
       line="{{ item.line }}"
     with_items:
-      - { regexp: '^\[xdebug\]', line: '\n[xdebug]'}
+      - { regexp: '^\[xdebug\]', line: '[xdebug]'}
       - { regexp: '^xdebug.remote_enable=On', line: 'xdebug.remote_enable=On' }
       - { regexp: '^xdebug.remote_host=localhost', line: 'xdebug.remote_host=localhost' }
       - { regexp: '^xdebug.remote_port=9000', line: 'xdebug.remote_port=9000' }

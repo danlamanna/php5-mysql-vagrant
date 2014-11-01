@@ -8,6 +8,11 @@ Vagrant.configure(VAGRANTFILE_API_VERSION) do |config|
 
   config.vm.network "forwarded_port", guest: 80, host: 8080
 
+  config.vm.synced_folder "public/", "/var/www/html",
+  owner: "vagrant",
+  group: "vagrant",
+  mount_options: ["dmode=775,fmode=664"]
+
   config.vm.provision :shell, :path => "provision.sh"
 
   config.vm.provision "ansible" do |ansible|
