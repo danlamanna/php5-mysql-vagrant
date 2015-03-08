@@ -91,6 +91,16 @@
   - name: make composer executable
     shell: chmod a+x /usr/local/bin/composer
 
+  - name: install drush
+    sudo: false
+    shell: "composer global require drush/drush:6.*"
+
+  - name: add composer to PATH
+    lineinfile:
+      state=present
+      dest=/home/vagrant/.bashrc
+      line="export PATH=\"$HOME/.composer/vendor/bin:$PATH\""
+
   handlers:
     - name: restart apache
       action: service name=apache2 state=restarted
